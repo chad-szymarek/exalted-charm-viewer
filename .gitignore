@@ -1,0 +1,17 @@
+# Local virtualenv
+.venv/
+
+# Copyrighted source material — do NOT commit (Onyx Path)
+source/
+*.pdf
+*.pdf:Zone.Identifier
+
+# Generated charm data derived from copyrighted text — keep local
+data/charms.json
+
+# Python
+__pycache__/
+*.pyc
+
+# Local Claude Code settings
+.claude/

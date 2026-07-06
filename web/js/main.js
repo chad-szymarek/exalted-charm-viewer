@@ -15,12 +15,39 @@ async function loadPreparsedData() {
   return response.json();
 }
 
-// Upload the chosen PDF, parse it server-side (in memory), and load the result.
-// Uses XMLHttpRequest so the upload can report real progress; the server-side
-// parse that follows is a single opaque step, shown as an indeterminate bar.
+// Upload the chosen PDF and parse it server-side (in memory). XMLHttpRequest
+// reports real upload progress; the server then streams newline-delimited JSON
+// ({"progress"|"result"|"error"}) as it parses, giving a real "Parsing… X%".
 function uploadAndParsePdf(file) {
   const request = new XMLHttpRequest();
   request.open("POST", "parse");
+
+  let processedLength = 0;
+  let finalResult = null;
+  let finalError = null;
+
+  // Parse whatever complete newline-terminated JSON lines have arrived so far.
+  const consumeStreamedLines = () => {
+    const responseText = request.responseText;
+    const unprocessed = responseText.slice(processedLength);
+    const lines = unprocessed.split("\n");
+    // The last element is a partial line (no newline yet) — leave it buffered.
+    processedLength += unprocessed.length - lines[lines.length - 1].length;
+    for (let i = 0; i < lines.length - 1; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+      let message;
+      try { message = JSON.parse(line); } catch (_) { continue; }
+      if (message.progress != null) {
+        const percent = Math.round(message.progress * 100);
+        setProgress(`Parsing charms, sorceries, and merits… ${percent}%`, percent);
+      } else if (message.result) {
+        finalResult = message.result;
+      } else if (message.error) {
+        finalError = message.error;
+      }
+    }
+  };
 
   request.upload.onprogress = (event) => {
     if (event.lengthComputable) {
@@ -28,26 +55,22 @@ function uploadAndParsePdf(file) {
       setProgress(`Uploading ${file.name}… ${percent}%`, percent);
     }
   };
-  request.upload.onload = () =>
-    setProgress("Parsing charms… (this can take a moment)", null);
+  request.upload.onload = () => setProgress("Parsing charms, sorceries, and merits… 0%", 0);
 
+  request.onprogress = consumeStreamedLines;
   request.onload = () => {
-    if (request.status >= 200 && request.status < 300) {
-      let charmData;
-      try {
-        charmData = JSON.parse(request.responseText);
-      } catch (_) {
-        setStatus("Server returned an unexpected response.");
-        return;
-      }
-      cacheCharmData(charmData);
-      loadCharmData(charmData);
+    consumeStreamedLines();
+    if (!finalResult && !finalError) {
+      // Non-streamed error body (e.g. a 400 before streaming began).
+      try { finalError = JSON.parse(request.responseText).error; } catch (_) { /* */ }
+    }
+    if (finalError) {
+      setStatus(`Could not parse PDF: ${finalError}`);
+    } else if (finalResult) {
+      cacheCharmData(finalResult);
+      loadCharmData(finalResult);
     } else {
-      let message = `${request.status} ${request.statusText}`;
-      try {
-        message = JSON.parse(request.responseText).error || message;
-      } catch (_) { /* non-JSON error body */ }
-      setStatus(`Could not parse PDF: ${message}`);
+      setStatus(`Server returned an unexpected response (status ${request.status}).`);
     }
   };
   request.onerror = () => setStatus("Upload failed (network error).");

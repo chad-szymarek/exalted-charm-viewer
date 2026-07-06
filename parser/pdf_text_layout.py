@@ -6,6 +6,8 @@ page -> block -> line -> span structure and how to turn it back into clean prose
 """
 import re
 
+import fitz  # PyMuPDF
+
 SOFT_HYPHEN = "­"
 
 
@@ -23,8 +25,10 @@ def blocks_in_reading_order(page):
     """Text blocks in two-column reading order: left column top-to-bottom,
     then right column top-to-bottom."""
     column_split_x = page.rect.width / 2
-    text_blocks = [block for block in page.get_text("dict")["blocks"]
-                   if "lines" in block]
+    # TEXTFLAGS_TEXT skips image extraction — the book's pages carry background
+    # watercolor art we don't need, and skipping it speeds up extraction.
+    page_dict = page.get_text("dict", flags=fitz.TEXTFLAGS_TEXT)
+    text_blocks = [block for block in page_dict["blocks"] if "lines" in block]
     left_column = sorted((block for block in text_blocks
                           if block["bbox"][0] < column_split_x),
                          key=lambda block: block["bbox"][1])

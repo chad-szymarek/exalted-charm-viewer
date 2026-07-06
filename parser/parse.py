@@ -38,12 +38,12 @@ from pdf_text_layout import (
 from prerequisite_graph import link_prerequisite_graph, make_charm_id_slug
 
 
-def collect_charm_names(document, first_page_index, end_page_index):
+def collect_charm_names(blocks_by_page_index):
     """First pass: gather every charm name so the main pass can tell a wrapped
     prerequisite name apart from the start of a description."""
     charm_names = set()
-    for page_index in range(first_page_index, end_page_index):
-        for block in blocks_in_reading_order(document[page_index]):
+    for blocks in blocks_by_page_index.values():
+        for block in blocks:
             if block_is_charm_header(block):
                 charm_name = extract_charm_name(block)
                 if charm_name:
@@ -83,15 +83,31 @@ def build_output(charms, category_display_names):
     }
 
 
-def parse_charms_from_document(document):
+def parse_charms_from_document(document, progress_callback=None):
+    """Parse charms, spells, and merits. progress_callback(fraction) is called
+    with a 0..1 completion estimate (page extraction dominates the time)."""
+    def report(fraction):
+        if progress_callback:
+            progress_callback(max(0.0, min(1.0, fraction)))
+
+    report(0.02)
     category_display_names, first_page_index, end_page_index, \
         chapter_seven_start_index = discover_charm_categories(document)
     print(f"Charm region: pages {first_page_index + 1}..{end_page_index} "
           f"(physical). {len(category_display_names)} categories.",
           file=sys.stderr)
 
-    known_charm_names = collect_charm_names(
-        document, first_page_index, end_page_index)
+    # Extract every page in the region exactly once; both the name-collection
+    # pass and the main pass read from this cache. Extraction is the slow step,
+    # so progress is reported here (spanning ~10%..90%).
+    blocks_by_page_index = {}
+    page_count = max(1, end_page_index - first_page_index)
+    for offset, page_index in enumerate(range(first_page_index, end_page_index)):
+        blocks_by_page_index[page_index] = \
+            blocks_in_reading_order(document[page_index])
+        report(0.10 + 0.80 * (offset + 1) / page_count)
+
+    known_charm_names = collect_charm_names(blocks_by_page_index)
 
     parsed_charms = []
     current_category_name = None
@@ -107,8 +123,7 @@ def parse_charms_from_document(document):
             charm_in_progress = None
 
     for page_index in range(first_page_index, end_page_index):
-        page = document[page_index]
-        for block in blocks_in_reading_order(page):
+        for block in blocks_by_page_index[page_index]:
             header_text = section_header_text(block)
             if header_text is not None:
                 matched_category_key = _match_category(
@@ -174,6 +189,7 @@ def parse_charms_from_document(document):
     category_display_names = OrderedDict(category_display_names)
     category_display_names.update(merit_categories)
 
+    report(1.0)
     return parsed_charms, category_display_names
 
 

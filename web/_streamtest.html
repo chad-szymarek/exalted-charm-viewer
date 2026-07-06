@@ -1,0 +1,20 @@
+<body style="background:#111;color:#0f0;font-family:monospace"><div id="log">start</div>
+<script>
+const log=(m)=>document.getElementById('log').textContent=m;
+(async()=>{
+  const file=new File([await (await fetch('_repro.pdf')).blob()],'core.pdf',{type:'application/pdf'});
+  const xhr=new XMLHttpRequest(); xhr.open('POST','parse');
+  let processed=0, result=null, error=null, maxPct=-1, ticks=0;
+  const consume=()=>{
+    const t=xhr.responseText, u=t.slice(processed), lines=u.split('\n');
+    processed += u.length - lines[lines.length-1].length;
+    for(let i=0;i<lines.length-1;i++){const ln=lines[i].trim();if(!ln)continue;
+      let m;try{m=JSON.parse(ln)}catch(_){continue}
+      if(m.progress!=null){maxPct=Math.max(maxPct,Math.round(m.progress*100));ticks++;}
+      else if(m.result)result=m.result; else if(m.error)error=m.error;}
+  };
+  xhr.onprogress=consume;
+  xhr.onload=()=>{consume();log('DONE ticks='+ticks+' maxPct='+maxPct+' entries='+(result?result.charms.length:null)+' error='+error);};
+  const fd=new FormData(); fd.append('pdf',file); xhr.send(fd);
+})();
+</script></body>

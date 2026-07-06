@@ -4,13 +4,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Exalted 3e Charm Viewer</title>
+  <title>Exalted 3e Charm, Sorcery, and Merit Viewer</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
   <header>
-    <h1>Exalted 3e Charm and Merit Viewer</h1>
+    <h1>Exalted 3e Charm, Sorcery, and Merit Viewer</h1>
     <span class="meta" id="dataSummary"></span>
     <label class="uploadbtn" id="uploadLabel">Upload PDF
       <input type="file" id="pdfInput" accept="application/pdf,.pdf" hidden>
@@ -25,7 +25,7 @@
     <div class="sidebar" id="categorySidebar"></div>
     <div class="listcol">
       <div class="controls">
-        <input type="text" id="searchInput" placeholder="Search charms, spells, merits…" autocomplete="off">
+        <input type="text" id="searchInput" placeholder="Search charms, sorceries, and merits…" autocomplete="off">
         <div class="row">
           <label><input type="checkbox" id="searchDescriptionsCheckbox"> search descriptions</label>
         </div>
@@ -38,7 +38,7 @@
       <div class="list" id="charmList"></div>
     </div>
     <div class="detail" id="charmDetail">
-      <div class="placeholder">Select a charm to view its details.</div>
+      <div class="placeholder">Select a charm, sorcery, or merit to view its details.</div>
     </div>
   </div>
   <script type="module" src="js/main.js"></script>

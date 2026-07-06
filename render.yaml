@@ -1,0 +1,13 @@
+# Render Blueprint: one web service that serves the viewer and parses uploads.
+# In Render: New > Blueprint, point it at this repo, and it reads this file.
+services:
+  - type: web
+    name: exalted-charm-viewer
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    # --timeout 120 gives a large PDF room to parse before gunicorn kills the worker.
+    startCommand: gunicorn app:app --timeout 120
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.3"

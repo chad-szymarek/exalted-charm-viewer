@@ -63,7 +63,26 @@ def _match_category(category_display_names, header_text):
 
 
 def parse_charms_from_pdf(pdf_path):
-    document = fitz.open(pdf_path)
+    """Parse charms from a PDF on disk. Returns (charms, category_display_names)."""
+    return parse_charms_from_document(fitz.open(pdf_path))
+
+
+def parse_charms_from_bytes(pdf_bytes):
+    """Parse charms from PDF bytes held in memory (nothing touches disk).
+
+    Used by the web upload endpoint so an uploaded PDF is never stored."""
+    return parse_charms_from_document(fitz.open(stream=pdf_bytes, filetype="pdf"))
+
+
+def build_output(charms, category_display_names):
+    """The JSON payload shape shared by the CLI and the web endpoint."""
+    return {
+        "categories": list(category_display_names.values()),
+        "charms": charms,
+    }
+
+
+def parse_charms_from_document(document):
     category_display_names, first_page_index, end_page_index, \
         chapter_seven_start_index = discover_charm_categories(document)
     print(f"Charm region: pages {first_page_index + 1}..{end_page_index} "
@@ -180,10 +199,7 @@ def main():
     charms, category_display_names = parse_charms_from_pdf(arguments.pdf)
     _print_category_counts(charms, category_display_names)
 
-    output = {
-        "categories": list(category_display_names.values()),
-        "charms": charms,
-    }
+    output = build_output(charms, category_display_names)
     with open(arguments.out, "w", encoding="utf-8") as output_file:
         json.dump(output, output_file, indent=2, ensure_ascii=False)
     print(f"Wrote {arguments.out}", file=sys.stderr)

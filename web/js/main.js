@@ -167,9 +167,13 @@ function populateTypeFilter() {
 function loadCharmData(charmData) {
   populateStateFrom(charmData);
   elementById("searchInput").value = "";
+  const sorceryCount = viewerState.allCharms.filter(
+    (entry) => / Circle Spells$/.test(entry.category)).length;
+  const meritCount = viewerState.allCharms.filter(
+    (entry) => / Merits$/.test(entry.category)).length;
+  const charmCount = viewerState.allCharms.length - sorceryCount - meritCount;
   elementById("dataSummary").textContent =
-    `${viewerState.allCharms.length} charms · ` +
-    `${viewerState.categoryNames.length} categories`;
+    `${charmCount} charms · ${sorceryCount} sorceries · ${meritCount} merits`;
   populateTypeFilter();
   renderCategorySidebar();
   renderCharmList();

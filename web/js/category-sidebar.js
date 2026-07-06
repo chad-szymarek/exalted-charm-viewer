@@ -79,4 +79,5 @@ export function renderCategorySidebar() {
   appendCategoryGroup("Abilities", viewerState.abilityCategoryNames);
   appendCategoryGroup("Martial Arts", viewerState.martialArtsCategoryNames);
   appendCategoryGroup("Sorcery", viewerState.sorceryCategoryNames);
+  appendCategoryGroup("Merits", viewerState.meritCategoryNames);
 }

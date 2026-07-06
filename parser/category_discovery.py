@@ -22,6 +22,39 @@ CHAPTER_SIX_NON_CATEGORY_SECTIONS = {
 }
 
 
+def discover_merit_section(document):
+    """Return (merit_categories, start_page_index, end_page_index) for Merits.
+
+    merit_categories is an ordered {lookup_key: display_name} of the merit
+    sub-sections ("Standard Merits", "Supernatural Merits"), discovered from the
+    page headers. The region runs from the "Merits" section to "Flaws" (both from
+    the outline).
+    """
+    table_of_contents = document.get_toc(simple=True)
+    merits_page = flaws_page = None
+    for level, title, page_number in table_of_contents:
+        clean_title = normalize_whitespace(title)
+        if clean_title == "Merits" and merits_page is None:
+            merits_page = page_number
+        elif clean_title == "Flaws" and flaws_page is None:
+            flaws_page = page_number
+    if merits_page is None or flaws_page is None:
+        sys.exit("Could not locate the Merits / Flaws sections in the outline.")
+
+    start_page_index = merits_page - 1
+    end_page_index = flaws_page - 1
+
+    merit_categories = OrderedDict()
+    for page_index in range(start_page_index, end_page_index):
+        for block in blocks_in_reading_order(document[page_index]):
+            header_text = section_header_text(block)
+            # "Standard Merits" / "Supernatural Merits" — but not the "Merits"
+            # intro header itself.
+            if header_text and header_text.endswith(" Merits"):
+                merit_categories.setdefault(header_text.lower(), header_text)
+    return merit_categories, start_page_index, end_page_index
+
+
 def discover_charm_categories(document):
     """Return (category_display_names, first_page_index, end_page_index,
     chapter_seven_start_index).

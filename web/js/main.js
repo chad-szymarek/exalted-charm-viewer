@@ -112,11 +112,14 @@ function populateStateFrom(charmData) {
   charmData.charms.forEach(
     (charm) => viewerState.charmsById.set(charm.id, charm));
   viewerState.abilityCategoryNames = charmData.categories.filter(
-    (name) => !/ Style$/.test(name) && !/ Circle Spells$/.test(name));
+    (name) => !/ Style$/.test(name) && !/ Circle Spells$/.test(name)
+      && !/ Merits$/.test(name));
   viewerState.martialArtsCategoryNames =
     charmData.categories.filter((name) => / Style$/.test(name));
   viewerState.sorceryCategoryNames =
     charmData.categories.filter((name) => / Circle Spells$/.test(name));
+  viewerState.meritCategoryNames =
+    charmData.categories.filter((name) => / Merits$/.test(name));
   // Reset per-dataset view state (relevant when a new PDF is uploaded).
   viewerState.selectedCharmIds.clear();
   viewerState.activeCategoryName = null;

@@ -25,19 +25,27 @@ export function showCharmDetail(charmId) {
   renderCharmList(); // refresh the active-row highlight
   history.replaceState(null, "", "#" + charm.id); // deep-linkable URL
 
-  const statRowsHtml = [
-    ["Cost", charm.cost],
-    ["Mins", charm.mins],
-    ["Type", charm.type],
-    ["Duration", charm.duration],
-  ].filter(([, value]) => value)
-   .map(([label, value]) => `<dt>${label}</dt><dd>${escapeHtml(value)}</dd>`)
-   .join("");
+  // Merits use a different stat block (rating + type, no cost/keywords/tree).
+  const isMerit = charm.category.endsWith(" Merits");
+  const statRows = isMerit
+    ? [["Rating", charm.rating], ["Type", charm.type]]
+    : [["Cost", charm.cost], ["Mins", charm.mins],
+       ["Type", charm.type], ["Duration", charm.duration]];
+  const statRowsHtml = statRows
+    .filter(([, value]) => value)
+    .map(([label, value]) => `<dt>${label}</dt><dd>${escapeHtml(value)}</dd>`)
+    .join("");
 
   const keywordsHtml = charm.keywords.length
     ? charm.keywords.map(
         (keyword) => `<span class="kw">${escapeHtml(keyword)}</span>`).join("")
     : `<span class="rawreq">None</span>`;
+  const keywordsRowHtml = isMerit
+    ? "" : `<dt>Keywords</dt><dd>${keywordsHtml}</dd>`;
+
+  const treeHtml = isMerit ? "" :
+    `<div class="tree"><h3>Prerequisites</h3><div>${graphEntriesHtml(charm.prerequisites)}</div></div>
+     <div class="tree"><h3>Leads to</h3><div>${graphEntriesHtml(charm.children)}</div></div>`;
 
   const descriptionHtml = charm.description.split("\n\n")
     .map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join("");
@@ -48,10 +56,9 @@ export function showCharmDetail(charmId) {
     <div class="cat-line">${escapeHtml(charm.category)} · page ${charm.page}</div>
     <dl class="stats">
       ${statRowsHtml}
-      <dt>Keywords</dt><dd>${keywordsHtml}</dd>
+      ${keywordsRowHtml}
     </dl>
-    <div class="tree"><h3>Prerequisites</h3><div>${graphEntriesHtml(charm.prerequisites)}</div></div>
-    <div class="tree"><h3>Leads to</h3><div>${graphEntriesHtml(charm.children)}</div></div>
+    ${treeHtml}
     <div class="desc">${descriptionHtml}</div>
   `;
   detailPane.querySelectorAll(".link[data-goto]").forEach((linkElement) => {

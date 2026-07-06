@@ -20,7 +20,7 @@ from collections import OrderedDict
 
 import fitz  # PyMuPDF
 
-from category_discovery import discover_charm_categories
+from category_discovery import discover_charm_categories, discover_merit_section
 from charm_block_parsing import (
     block_is_charm_header,
     block_is_description_body,
@@ -28,13 +28,14 @@ from charm_block_parsing import (
     parse_charm_stat_block,
     section_header_text,
 )
+from merit_parsing import block_is_merit_header, parse_merit_block
 from pdf_text_layout import (
     blocks_in_reading_order,
     join_description_paragraphs,
     normalize_whitespace,
     normalized_lookup_key,
 )
-from prerequisite_graph import link_prerequisite_graph
+from prerequisite_graph import link_prerequisite_graph, make_charm_id_slug
 
 
 def collect_charm_names(document, first_page_index, end_page_index):
@@ -143,6 +144,7 @@ def parse_charms_from_document(document):
                                  if keyword.strip()
                                  and keyword.strip().lower() != "none"],
                     "duration": stat_fields.get("duration", ""),
+                    "rating": "",         # merits only; empty for charms
                     "prerequisites": [],  # filled by link_prerequisite_graph
                     "children": [],       # filled by link_prerequisite_graph
                     "description": "",
@@ -162,7 +164,84 @@ def parse_charms_from_document(document):
 
     unresolved_references = link_prerequisite_graph(parsed_charms)
     _report_unresolved_references(unresolved_references)
+
+    # Merits live in their own section (Chapter Four) with a different format,
+    # so they are parsed separately and appended with globally-unique ids.
+    merits, merit_categories = parse_merits_from_document(document)
+    used_ids = {charm["id"] for charm in parsed_charms}
+    _assign_merit_ids(merits, used_ids)
+    parsed_charms.extend(merits)
+    category_display_names = OrderedDict(category_display_names)
+    category_display_names.update(merit_categories)
+
     return parsed_charms, category_display_names
+
+
+def _assign_merit_ids(merits, used_ids):
+    for merit in merits:
+        base_slug = make_charm_id_slug(merit["name"]) or "merit"
+        merit_id = base_slug
+        duplicate_counter = 2
+        while merit_id in used_ids:
+            merit_id = f"{base_slug}-{duplicate_counter}"
+            duplicate_counter += 1
+        used_ids.add(merit_id)
+        merit["id"] = merit_id
+
+
+def parse_merits_from_document(document):
+    """Parse Merit entries. Returns (merits, merit_categories)."""
+    merit_categories, start_page_index, end_page_index = \
+        discover_merit_section(document)
+
+    merits = []
+    current_category_name = None
+    merit_in_progress = None
+
+    def finish_current_merit():
+        nonlocal merit_in_progress
+        if merit_in_progress is not None:
+            merit_in_progress["description"] = join_description_paragraphs(
+                merit_in_progress["_description_blocks"])
+            del merit_in_progress["_description_blocks"]
+            merits.append(merit_in_progress)
+            merit_in_progress = None
+
+    for page_index in range(start_page_index, end_page_index):
+        for block in blocks_in_reading_order(document[page_index]):
+            header_text = section_header_text(block)
+            if header_text is not None:
+                finish_current_merit()
+                key = normalized_lookup_key(header_text)
+                current_category_name = merit_categories.get(key)  # None for intro
+                continue
+            if current_category_name is None:
+                continue
+            if block_is_merit_header(block):
+                finish_current_merit()
+                name, rating, merit_type, inline_lines = parse_merit_block(block)
+                merit_in_progress = {
+                    "id": "",
+                    "name": name,
+                    "category": current_category_name,
+                    "cost": "",
+                    "mins": "",
+                    "type": merit_type,
+                    "keywords": [],
+                    "duration": "",
+                    "rating": rating,
+                    "prerequisites": [],
+                    "children": [],
+                    "description": "",
+                    "page": page_index + 1,
+                    "_description_blocks": [inline_lines] if inline_lines else [],
+                }
+                continue
+            if merit_in_progress is not None and block_is_description_body(block):
+                merit_in_progress["_description_blocks"].append(block["lines"])
+
+    finish_current_merit()
+    return merits, merit_categories
 
 
 def _report_unresolved_references(unresolved_references):

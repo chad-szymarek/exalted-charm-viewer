@@ -20,10 +20,12 @@ function populateStateFrom(charmData) {
   viewerState.categoryNames = charmData.categories;
   charmData.charms.forEach(
     (charm) => viewerState.charmsById.set(charm.id, charm));
-  viewerState.abilityCategoryNames =
-    charmData.categories.filter((name) => !/ Style$/.test(name));
+  viewerState.abilityCategoryNames = charmData.categories.filter(
+    (name) => !/ Style$/.test(name) && !/ Circle Spells$/.test(name));
   viewerState.martialArtsCategoryNames =
     charmData.categories.filter((name) => / Style$/.test(name));
+  viewerState.sorceryCategoryNames =
+    charmData.categories.filter((name) => / Circle Spells$/.test(name));
 }
 
 function populateTypeFilter() {

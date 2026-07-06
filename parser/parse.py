@@ -87,13 +87,6 @@ def parse_charms_from_pdf(pdf_path):
             charm_in_progress = None
 
     for page_index in range(first_page_index, end_page_index):
-        # Entering Chapter Seven: end the last Chapter Six charm so the Martial
-        # Arts chapter intro is not appended to it. The martial-arts style
-        # headers that follow re-establish the category.
-        if page_index == chapter_seven_start_index:
-            finish_current_charm()
-            current_category_name = None
-
         page = document[page_index]
         for block in blocks_in_reading_order(page):
             header_text = section_header_text(block)
@@ -104,6 +97,12 @@ def parse_charms_from_pdf(pdf_path):
                     finish_current_charm()
                     current_category_name = \
                         category_display_names[matched_category_key]
+                elif page_index >= chapter_seven_start_index:
+                    # A non-category section in Chapter Seven (chapter intros,
+                    # Sorcerous Workings, Thaumaturgy): end the current category
+                    # so its prose is not attributed to the previous charm.
+                    finish_current_charm()
+                    current_category_name = None
                 continue  # header blocks never contribute to a description
 
             if current_category_name is None:

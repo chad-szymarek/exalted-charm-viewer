@@ -6,6 +6,7 @@ export const viewerState = {
   categoryNames: [],            // ordered, as emitted by the parser
   abilityCategoryNames: [],     // Chapter Six abilities
   martialArtsCategoryNames: [], // Chapter Seven "... Style" categories
+  sorceryCategoryNames: [],     // sorcery "... Circle Spells" categories
   selectedCharmIds: new Set(),
   collapsedGroups: new Set(),   // group labels hidden in the sidebar
   activeCategoryName: null,     // null = all categories

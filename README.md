@@ -61,3 +61,6 @@ Serving over http avoids the `file://` fetch restriction on `charms.json`.
   "page": 256
 }
 ```
+
+## Where to view and use this online
+`https://exalted-charm-viewer.onrender.com`

@@ -16,31 +16,93 @@ async function loadPreparsedData() {
 }
 
 // Upload the chosen PDF, parse it server-side (in memory), and load the result.
-async function uploadAndParsePdf(file) {
-  setStatus(`Parsing ${file.name}… (first run may take a while)`);
+// Uses XMLHttpRequest so the upload can report real progress; the server-side
+// parse that follows is a single opaque step, shown as an indeterminate bar.
+function uploadAndParsePdf(file) {
+  const request = new XMLHttpRequest();
+  request.open("POST", "parse");
+
+  request.upload.onprogress = (event) => {
+    if (event.lengthComputable) {
+      const percent = Math.round((event.loaded / event.total) * 100);
+      setProgress(`Uploading ${file.name}… ${percent}%`, percent);
+    }
+  };
+  request.upload.onload = () =>
+    setProgress("Parsing charms… (this can take a moment)", null);
+
+  request.onload = () => {
+    if (request.status >= 200 && request.status < 300) {
+      let charmData;
+      try {
+        charmData = JSON.parse(request.responseText);
+      } catch (_) {
+        setStatus("Server returned an unexpected response.");
+        return;
+      }
+      cacheCharmData(charmData);
+      loadCharmData(charmData);
+    } else {
+      let message = `${request.status} ${request.statusText}`;
+      try {
+        message = JSON.parse(request.responseText).error || message;
+      } catch (_) { /* non-JSON error body */ }
+      setStatus(`Could not parse PDF: ${message}`);
+    }
+  };
+  request.onerror = () => setStatus("Upload failed (network error).");
+
   const formData = new FormData();
   formData.append("pdf", file);
-  let response;
-  try {
-    response = await fetch("parse", { method: "POST", body: formData });
-  } catch (networkError) {
-    setStatus(`Upload failed: ${networkError.message}`);
-    return;
-  }
-  if (!response.ok) {
-    let message = `${response.status} ${response.statusText}`;
-    try {
-      message = (await response.json()).error || message;
-    } catch (_) { /* non-JSON error body */ }
-    setStatus(`Could not parse PDF: ${message}`);
-    return;
-  }
-  loadCharmData(await response.json());
+  setProgress(`Uploading ${file.name}… 0%`, 0);
+  request.send(formData);
 }
 
 function setStatus(message) {
   elementById("charmDetail").innerHTML =
     `<div class="placeholder">${message}</div>`;
+}
+
+// Render a progress bar in the detail pane. percent null = indeterminate.
+function setProgress(label, percent) {
+  const isIndeterminate = percent === null;
+  const fillStyle = isIndeterminate
+    ? "" : `style="width:${percent}%"`;
+  elementById("charmDetail").innerHTML =
+    `<div class="placeholder"><div class="progress-wrap">
+       <div class="progress-label">${label}</div>
+       <div class="progress-track">
+         <div class="progress-fill${isIndeterminate ? " indeterminate" : ""}" ${fillStyle}></div>
+       </div>
+     </div></div>`;
+}
+
+// --- Session cache: keep parsed charms across a refresh for a few minutes. ---
+// sessionStorage survives refreshes but clears when the tab closes, so nothing
+// lingers after the user leaves; the timestamp expires it within the session.
+const CACHE_KEY = "exalted-charms";
+const CACHE_TTL_MS = 5 * 60 * 1000;
+
+function cacheCharmData(charmData) {
+  try {
+    sessionStorage.setItem(CACHE_KEY,
+      JSON.stringify({ savedAt: Date.now(), data: charmData }));
+  } catch (_) { /* quota exceeded or storage disabled — skip caching */ }
+}
+
+function loadCachedCharmData() {
+  try {
+    const raw = sessionStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const { savedAt, data } = JSON.parse(raw);
+    if (Date.now() - savedAt > CACHE_TTL_MS) {
+      sessionStorage.removeItem(CACHE_KEY);
+      return null;
+    }
+    return data;
+  } catch (_) {
+    return null;
+  }
 }
 
 function populateStateFrom(charmData) {
@@ -128,13 +190,20 @@ function openCharmFromUrlHash() {
 
 async function startViewer() {
   wireControls();
+  // 1. Recently-parsed data cached this session (survives a refresh).
+  const cached = loadCachedCharmData();
+  if (cached) {
+    loadCharmData(cached);
+    return;
+  }
+  // 2. A pre-parsed file (local dev convenience).
   try {
     loadCharmData(await loadPreparsedData());
-  } catch (_) {
-    // No pre-parsed data (the normal case when hosted): prompt for a PDF.
-    setStatus("Upload your Exalted 3e core rulebook PDF to begin "
-      + "(top-left button). It is parsed in memory and never stored.");
-  }
+    return;
+  } catch (_) { /* none — fall through to the upload prompt */ }
+  // 3. Hosted, first visit: prompt for a PDF.
+  setStatus("Upload your Exalted 3e core rulebook PDF to begin "
+    + "(top-left button). It is parsed in memory and never stored.");
 }
 
 startViewer();

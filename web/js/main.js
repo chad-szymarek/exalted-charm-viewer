@@ -55,6 +55,7 @@ function wireControls() {
     viewerState.selectedCharmIds.clear();
     updateSelectionSummary();
     renderCharmList();
+    renderCategorySidebar();
   };
   elementById("exportAllButton").onclick = exportAllCharms;
   elementById("exportSelectedButton").onclick = exportSelectedCharms;

@@ -1,6 +1,7 @@
 // Charm selection (the checkbox set) and the header's selection summary.
 import { viewerState } from "./state.js";
 import { elementById } from "./dom-utils.js";
+import { renderCategorySidebar } from "./category-sidebar.js";
 
 export function toggleCharmSelection(charmId, isSelected) {
   if (isSelected) {
@@ -9,6 +10,7 @@ export function toggleCharmSelection(charmId, isSelected) {
     viewerState.selectedCharmIds.delete(charmId);
   }
   updateSelectionSummary();
+  renderCategorySidebar();  // refresh per-category selected counts
 }
 
 export function updateSelectionSummary() {

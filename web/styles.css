@@ -40,8 +40,9 @@ button:disabled { opacity: .4; cursor: default; }
 .cat:hover { background: var(--panel2); }
 .cat.active { background: var(--sel); color: var(--gold); border-left: 3px solid var(--gold); padding-left: 11px; }
 .cat .n { color: var(--muted); font-size: 11px; }
-.cat.group { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; cursor: default; margin-top: 8px; padding-bottom: 2px; }
-.cat.group:hover { background: none; }
+.cat.group { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; margin-top: 8px; padding-bottom: 2px; }
+.cat.group:hover { background: var(--panel2); color: var(--gold-dim); }
+.cat.group .caret { font-size: 10px; }
 
 /* Charm list column */
 .listcol { width: 340px; border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; }

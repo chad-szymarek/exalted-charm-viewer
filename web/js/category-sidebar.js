@@ -28,10 +28,19 @@ export function renderCategorySidebar() {
 
   const appendCategoryGroup = (groupLabel, categoryNames) => {
     if (!categoryNames.length) return;
+    const isCollapsed = viewerState.collapsedGroups.has(groupLabel);
     const groupHeading = document.createElement("div");
     groupHeading.className = "cat group";
-    groupHeading.textContent = groupLabel;
+    groupHeading.innerHTML =
+      `<span>${escapeHtml(groupLabel)}</span>` +
+      `<span class="caret">${isCollapsed ? "▸" : "▾"}</span>`;
+    groupHeading.onclick = () => {
+      if (isCollapsed) viewerState.collapsedGroups.delete(groupLabel);
+      else viewerState.collapsedGroups.add(groupLabel);
+      renderCategorySidebar();
+    };
     sidebar.appendChild(groupHeading);
+    if (isCollapsed) return;
     categoryNames.forEach((categoryName) => {
       const categoryEntry = document.createElement("div");
       categoryEntry.className =

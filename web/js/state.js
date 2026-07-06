@@ -7,6 +7,7 @@ export const viewerState = {
   abilityCategoryNames: [],     // Chapter Six abilities
   martialArtsCategoryNames: [], // Chapter Seven "... Style" categories
   selectedCharmIds: new Set(),
+  collapsedGroups: new Set(),   // group labels hidden in the sidebar
   activeCategoryName: null,     // null = all categories
   activeTypeFilter: "",         // "" = all types
   searchQuery: "",

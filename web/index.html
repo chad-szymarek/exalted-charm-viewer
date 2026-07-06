@@ -1,42 +1,47 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Exalted 3e Charm Viewer</title>
-<link rel="stylesheet" href="styles.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Exalted 3e Charm Viewer</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
-<header>
-  <h1>Exalted 3e Charms</h1>
-  <span class="meta" id="dataSummary"></span>
-  <label class="uploadbtn" id="uploadLabel">Upload PDF
-    <input type="file" id="pdfInput" accept="application/pdf,.pdf" hidden>
-  </label>
-  <span class="spacer"></span>
-  <span class="selbar" id="selectionSummary">0 selected</span>
-  <button id="clearSelectionButton">Clear</button>
-  <button id="exportSelectedButton">Export selected</button>
-  <button class="primary" id="exportAllButton">Export all</button>
-</header>
-<div class="main">
-  <div class="sidebar" id="categorySidebar"></div>
-  <div class="listcol">
-    <div class="controls">
-      <input type="text" id="searchInput" placeholder="Search charms…" autocomplete="off">
-      <div class="row">
-        <label><input type="checkbox" id="searchDescriptionsCheckbox"> search descriptions</label>
+  <header>
+    <h1>Exalted 3e Charm and Merit Viewer</h1>
+    <span class="meta" id="dataSummary"></span>
+    <label class="uploadbtn" id="uploadLabel">Upload PDF
+      <input type="file" id="pdfInput" accept="application/pdf,.pdf" hidden>
+    </label>
+    <span class="spacer"></span>
+    <span class="selbar" id="selectionSummary">0 selected</span>
+    <button id="clearSelectionButton">Clear</button>
+    <button id="exportSelectedButton">Export selected</button>
+    <button class="primary" id="exportAllButton">Export all</button>
+  </header>
+  <div class="main">
+    <div class="sidebar" id="categorySidebar"></div>
+    <div class="listcol">
+      <div class="controls">
+        <input type="text" id="searchInput" placeholder="Search charms…" autocomplete="off">
+        <div class="row">
+          <label><input type="checkbox" id="searchDescriptionsCheckbox"> search descriptions</label>
+        </div>
+        <div class="row">
+          <select id="typeFilterSelect">
+            <option value="">All types</option>
+          </select>
+        </div>
       </div>
-      <div class="row">
-        <select id="typeFilterSelect"><option value="">All types</option></select>
-      </div>
+      <div class="list" id="charmList"></div>
     </div>
-    <div class="list" id="charmList"></div>
+    <div class="detail" id="charmDetail">
+      <div class="placeholder">Select a charm to view its details.</div>
+    </div>
   </div>
-  <div class="detail" id="charmDetail">
-    <div class="placeholder">Select a charm to view its details.</div>
-  </div>
-</div>
-<script type="module" src="js/main.js"></script>
+  <script type="module" src="js/main.js"></script>
 </body>
+
 </html>
